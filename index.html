@@ -931,8 +931,27 @@
             items: [],
             weekHistory: [false, false, false, false, false, false, false],
             activeTimer: null,
-            lastStreakDate: null
+            lastStreakDate: null,
+            lastWeekReset: null
         };
+
+        function checkAndResetWeeklyTracker() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            const distanceToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+            
+            const currentMonday = new Date(now);
+            currentMonday.setDate(now.getDate() + distanceToMonday);
+            currentMonday.setHours(0, 0, 0, 0);
+
+            const lastReset = data.lastWeekReset ? new Date(data.lastWeekReset) : 0;
+
+            if (lastReset < currentMonday) {
+                data.weekHistory = [false, false, false, false, false, false, false];
+                data.lastWeekReset = currentMonday.toISOString();
+                saveDataToCloud();
+            }
+        }
 
         db.ref('trackerData').on('value', (snapshot) => {
             const serverData = snapshot.val();
@@ -945,7 +964,9 @@
                 if(!data.items) data.items = [];
                 if(!data.weekHistory) data.weekHistory = [false, false, false, false, false, false, false];
                 if(!data.lastStreakDate) data.lastStreakDate = null;
+                if(!data.lastWeekReset) data.lastWeekReset = null;
             }
+            checkAndResetWeeklyTracker();
             updateUI();
             updateTimerUI();
         });
@@ -1084,7 +1105,8 @@
                     items: [],
                     weekHistory: [false, false, false, false, false, false, false],
                     activeTimer: null,
-                    lastStreakDate: null
+                    lastStreakDate: null,
+                    lastWeekReset: null
                 };
                 saveDataToCloud();
                 alert("All stats, streak, bank, and submission logs have been reset to 0.");
