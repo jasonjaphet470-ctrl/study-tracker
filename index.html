@@ -953,7 +953,7 @@
             }
         }
 
-        db.ref('trackerData').on('value', (snapshot) => {
+                db.ref('trackerData').on('value', (snapshot) => {
             const serverData = snapshot.val();
             if (serverData) {
                 data = serverData;
@@ -967,9 +967,28 @@
                 if(!data.lastWeekReset) data.lastWeekReset = null;
             }
             checkAndResetWeeklyTracker();
+            checkMissedDays(); // Added rule to check for missed days
             updateUI();
             updateTimerUI();
         });
+
+        // New function that resets the streak if you miss a day
+        function checkMissedDays() {
+            if (!data.lastStreakDate) return;
+            
+            const today = new Date(getTodayDateString());
+            const lastDate = new Date(data.lastStreakDate);
+            
+            // Calculate how many days have passed
+            const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+            
+            // If more than 1 day has passed, reset streak to 0
+            if (diffDays > 1 && data.streak > 0) {
+                data.streak = 0;
+                saveDataToCloud();
+            }
+        }
+
 
         function saveDataToCloud() {
             db.ref('trackerData').set(data);
